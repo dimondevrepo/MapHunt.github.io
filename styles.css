@@ -77,3 +77,21 @@ canvas{max-width:100%;border-radius:6px;background:#081222}
 ul#recent-list{list-style:none;padding:0;margin:0}
 ul#recent-list li{padding:8px;border-bottom:1px solid rgba(255,255,255,0.02);display:flex;gap:10px;align-items:center}
 ul#recent-list img{height:48px;width:auto;border-radius:4px;object-fit:cover}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 12px;
+}
+
+table th, table td {
+  border: 1px solid rgba(255,255,255,0.05);
+  padding: 6px;
+  text-align: center;
+}
+
+table img {
+  height: 80px;
+  object-fit: cover;
+  border-radius: 4px;
+}
