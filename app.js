@@ -21,7 +21,7 @@ const firebaseConfig = {
   authDomain: "maphunt-8ca4e.firebaseapp.com",
   projectId: "maphunt-8ca4e",
   storageBucket: "maphunt-8ca4e.firebasestorage.app",
-  databaseURL: "https://maphunt-8ca4e-default-rtdb.europe-west1.firebasedatabase.app/"
+  databaseURL: "https://maphunt-8ca4e-default-rtdb.europe-west1.firebasedatabase.app/",
   messagingSenderId: "974675337809",
   appId: "1:974675337809:web:2bf45fe8068c8ac9ab8e70"
 };
@@ -302,5 +302,6 @@ function fileToDataURL(file) {
     reader.readAsDataURL(file);
   });
 }
+
 
 
