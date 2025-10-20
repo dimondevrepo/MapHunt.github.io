@@ -10,13 +10,11 @@ import {
   ref,
   set,
   onValue,
-  push,
-  serverTimestamp,
   update,
   remove
 } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-database.js";
 
-// ----------------- CONFIGURE THIS -----------------
+// ----------------- CONFIG -----------------
 const firebaseConfig = {
   apiKey: "AIzaSyDJfCUOEXDZ7peKegYIf3FWLBc9vETyaJA",
   authDomain: "maphunt-8ca4e.firebaseapp.com",
@@ -51,10 +49,10 @@ const submitBtn = document.getElementById("submit-btn");
 const clearBtn = document.getElementById("clear-btn");
 const statusEl = document.getElementById("status");
 const submittedCategories = document.getElementById("submitted-categories");
-const revealBtn = document.getElementById("reveal-btn");
 
 const revealSection = document.getElementById("reveal-section");
 const revealTableBody = document.querySelector("#reveal-table tbody");
+const revealBtn = document.getElementById("reveal-btn");
 
 const gameHeader = document.getElementById("game-header");
 const timerDisplay = document.getElementById("timer-display");
@@ -66,7 +64,7 @@ let currentImageDataUrl = null;
 let lobbyId = "main-lobby";
 let timerInterval = null;
 
-// --- Auth + Login ---
+// --- AUTH ---
 startBtn.addEventListener("click", async () => {
   const nick = (nicknameInput.value || "").trim();
   if (!nick) return setStatus("Enter a nickname.", true);
@@ -76,7 +74,6 @@ startBtn.addEventListener("click", async () => {
   try {
     const cred = await signInAnonymously(auth);
     const uid = cred.user.uid;
-    // Add player to lobby in Realtime DB
     await set(ref(db, `lobbies/${lobbyId}/players/${uid}`), {
       nickname: currentNickname,
       submitted: false
@@ -88,7 +85,6 @@ startBtn.addEventListener("click", async () => {
   }
 });
 
-// Auth listener
 onAuthStateChanged(auth, (user) => {
   currentUser = user;
   if (user) {
@@ -116,12 +112,12 @@ signoutBtn.addEventListener("click", async () => {
   currentNickname = "";
 });
 
-// --- Lobby / Game ---
+// --- LOBBY / START GAME ---
 startGameBtn.addEventListener("click", async () => {
-  // Reset previous game
+  // Clear previous game data
   await remove(ref(db, `lobbies/${lobbyId}/players`));
   await remove(ref(db, `lobbies/${lobbyId}/submissions`));
-  
+
   // Start new game
   await update(ref(db, `lobbies/${lobbyId}`), {
     gameState: "started",
@@ -129,7 +125,7 @@ startGameBtn.addEventListener("click", async () => {
   });
 });
 
-// Listen to lobby players
+// --- LOBBY LISTENERS ---
 function setupLobbyListeners() {
   onValue(ref(db, `lobbies/${lobbyId}/players`), (snap) => {
     const val = snap.val() || {};
@@ -142,7 +138,7 @@ function setupLobbyListeners() {
   });
 }
 
-// --- Game / Timer + Submissions ---
+// --- GAME / TIMER / SUBMISSIONS ---
 function setupGameListeners() {
   const lobbyRef = ref(db, `lobbies/${lobbyId}`);
   onValue(lobbyRef, (snap) => {
@@ -153,7 +149,8 @@ function setupGameListeners() {
     if (state === "started") {
       lobbySection.classList.add("hidden");
       submitSection.classList.remove("hidden");
-      revealBtn.classList.add("hidden");
+      revealSection.classList.add("hidden");
+      revealBtn?.classList.add("hidden");
       startTimer(data.timerStart || Date.now());
     } else if (state === "ended") {
       submitSection.classList.add("hidden");
@@ -165,7 +162,7 @@ function setupGameListeners() {
       revealSection.classList.add("hidden");
     }
 
-    // Show submitted categories
+    // Live submissions list
     submittedCategories.innerHTML = "";
     if (data.submissions) {
       Object.values(data.submissions).forEach(s => {
@@ -175,9 +172,15 @@ function setupGameListeners() {
       });
     }
   });
+
+  // Also listen directly to submissions for live reveal table
+  onValue(ref(db, `lobbies/${lobbyId}/submissions`), (snap) => {
+    const submissions = snap.val() || {};
+    populateRevealTable(submissions);
+  });
 }
 
-// --- Timer ---
+// --- TIMER ---
 function startTimer(startTime) {
   stopTimer();
   function updateTimer() {
@@ -188,7 +191,7 @@ function startTimer(startTime) {
       remaining = 0;
       stopTimer();
       update(ref(db, `lobbies/${lobbyId}`), { gameState: "ended" });
-      revealBtn.classList.remove("hidden");
+      revealBtn?.classList.remove("hidden");
     }
     const minutes = Math.floor(remaining / 60000);
     const seconds = Math.floor((remaining % 60000) / 1000);
@@ -202,7 +205,7 @@ function stopTimer() {
   if (timerInterval) clearInterval(timerInterval);
 }
 
-// --- Submission ---
+// --- SUBMISSIONS ---
 fileInput.addEventListener("change", async (ev) => {
   const file = ev.target.files?.[0];
   if (!file) return;
@@ -243,6 +246,7 @@ submitBtn.addEventListener("click", async () => {
     imageBase64: currentImageDataUrl
   });
 
+  // mark as submitted
   await update(ref(db, `lobbies/${lobbyId}/players/${currentUser.uid}`), {
     submitted: true
   });
@@ -258,7 +262,7 @@ revealBtn.addEventListener("click", () => {
   update(ref(db, `lobbies/${lobbyId}`), { gameState: "ended" });
 });
 
-// --- Reveal table ---
+// --- REVEAL TABLE ---
 function populateRevealTable(submissions) {
   revealTableBody.innerHTML = "";
   Object.values(submissions).forEach(s => {
@@ -271,7 +275,7 @@ function populateRevealTable(submissions) {
     revealTableBody.appendChild(tr);
   });
 
-  // Enable click to view full size
+  // Full-size image click
   document.querySelectorAll(".clickable-img").forEach(img => {
     img.addEventListener("click", () => {
       const overlay = document.createElement("div");
@@ -297,7 +301,7 @@ function populateRevealTable(submissions) {
   });
 }
 
-// --- Utilities ---
+// --- UTILITIES ---
 function setStatus(msg, isError=false) {
   statusEl.textContent = msg;
   statusEl.style.color = isError ? "red" : "white";
@@ -330,7 +334,7 @@ function fileToDataURL(file) {
   });
 }
 
-// Global helpers
+// --- GLOBAL HELPERS ---
 window.db = db;
 window.ref = ref;
 window.update = update;
