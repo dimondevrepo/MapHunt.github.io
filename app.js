@@ -138,7 +138,6 @@ function setupLobbyListeners() {
   });
 }
 
-// --- Game / Timer ---
 function setupGameListeners() {
   const lobbyRef = ref(db, `lobbies/${lobbyId}`);
   onValue(lobbyRef, (snap) => {
@@ -165,11 +164,13 @@ function setupGameListeners() {
     // Show submitted categories
     submittedCategories.innerHTML = "";
     if (data.submissions) {
-    Object.values(data.submissions).forEach(s => {
-    const li = document.createElement("li");
-    li.textContent = `${s.nickname}: ${s.category} ✅`;
-    submittedCategories.appendChild(li);
-  });
+      Object.values(data.submissions).forEach(s => {
+        const li = document.createElement("li");
+        li.textContent = `${s.nickname}: ${s.category} ✅`;
+        submittedCategories.appendChild(li);
+      });
+    } // <- close if
+  }); // <- close onValue
 }
 
 // --- Timer ---
