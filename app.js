@@ -265,17 +265,19 @@ revealBtn.addEventListener("click", () => {
 // --- REVEAL TABLE ---
 function populateRevealTable(submissions) {
   revealTableBody.innerHTML = "";
-  Object.values(submissions).forEach(s => {
-    const tr = document.createElement("tr");
-    tr.innerHTML = `
-      <td>${s.nickname}</td>
-      <td>${s.category}</td>
-      <td><img class="clickable-img" src="${s.imageBase64}" /></td>
-    `;
-    revealTableBody.appendChild(tr);
+  Object.values(submissions).forEach(userSubmissions => {
+    Object.values(userSubmissions).forEach(s => {
+      const tr = document.createElement("tr");
+      tr.innerHTML = `
+        <td>${s.nickname}</td>
+        <td>${s.category}</td>
+        <td><img class="clickable-img" src="${s.imageBase64}" /></td>
+      `;
+      revealTableBody.appendChild(tr);
+    });
   });
 
-  // Full-size image click
+  // Click to view full size
   document.querySelectorAll(".clickable-img").forEach(img => {
     img.addEventListener("click", () => {
       const overlay = document.createElement("div");
@@ -341,3 +343,4 @@ window.update = update;
 window.endGame = () => {
   update(ref(db, `lobbies/${lobbyId}`), { gameState: "ended" });
 };
+
