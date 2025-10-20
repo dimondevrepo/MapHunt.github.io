@@ -309,4 +309,3 @@ window.endGame = () => {
   // window.db, ref, update are already defined
   update(ref(window.db, "lobbies/main-lobby"), { gameState: "ended" });
 };
-
