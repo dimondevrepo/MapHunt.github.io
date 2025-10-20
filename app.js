@@ -240,11 +240,12 @@ submitBtn.addEventListener("click", async () => {
   if (!category || !currentImageDataUrl) return setStatus("Choose category & image.", true);
 
   const submissionRef = ref(db, `lobbies/${lobbyId}/submissions/${currentUser.uid}`);
-  await set(submissionRef, {
-    nickname: currentNickname,
-    category,
-    imageBase64: currentImageDataUrl
-  });
+  await push(submissionRef, {
+  nickname: currentNickname,
+  category,
+  imageBase64: currentImageDataUrl,
+  timestamp: Date.now()
+});
 
   // mark as submitted
   await update(ref(db, `lobbies/${lobbyId}/players/${currentUser.uid}`), {
@@ -343,4 +344,5 @@ window.update = update;
 window.endGame = () => {
   update(ref(db, `lobbies/${lobbyId}`), { gameState: "ended" });
 };
+
 
