@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Game Screenshot Submitter</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <main class="container">
+    <h1>Game Screenshot Submitter</h1>
+
+    <section id="login-section" class="card">
+      <h2>Enter nickname (anonymous)</h2>
+      <input id="nickname-input" placeholder="Pick a nickname" maxlength="30" />
+      <button id="start-btn">Start (anonymous)</button>
+      <p class="muted">You will be signed in anonymously. Nickname is stored in Firestore for display only.</p>
+    </section>
+
+    <section id="submit-section" class="card hidden">
+      <div class="row">
+        <div>
+          <strong>Signed in as:</strong> <span id="display-nickname"></span>
+        </div>
+        <div>
+          <button id="signout-btn">Sign out</button>
+        </div>
+      </div>
+
+      <h2>Submit a screenshot</h2>
+
+      <label for="category">Category</label>
+      <select id="category">
+        <option value="">-- choose category --</option>
+        <option value="gameplay">Gameplay</option>
+        <option value="bug">Bug</option>
+        <option value="highscore">High Score</option>
+        <option value="funny">Funny</option>
+        <option value="art">Art</option>
+      </select>
+
+      <label for="file">Choose image file (png/jpg) or paste image (Ctrl+V)</label>
+      <input id="file-input" type="file" accept="image/*" />
+
+      <div class="preview">
+        <canvas id="preview-canvas" width="480" height="270"></canvas>
+      </div>
+
+      <div class="row">
+        <button id="submit-btn" class="primary">Submit</button>
+        <button id="clear-btn">Clear</button>
+      </div>
+
+      <div id="status" class="muted"></div>
+    </section>
+
+    <section id="recent-section" class="card hidden">
+      <h2>Recent Submissions (public)</h2>
+      <ul id="recent-list"></ul>
+    </section>
+
+    <footer class="muted">
+      Note: images are resized/compressed on the client. Firestore document limit ≈ 1 MB. If upload fails for size, try a smaller/low-quality image.
+    </footer>
+  </main>
+
+  <script type="module" src="app.js"></script>
+</body>
+</html>
