@@ -304,6 +304,10 @@ function fileToDataURL(file) {
   });
 }
 
+window.db = db;
+window.ref = ref;
+window.update = update;
+
 
 
 
