@@ -89,6 +89,7 @@ startBtn.addEventListener("click", async () => {
 
 // Auth listener
 onAuthStateChanged(auth, (user) => {
+  console.log("Auth state changed:", user);
   currentUser = user;
   if (user) {
     loginSection.classList.add("hidden");
@@ -302,6 +303,7 @@ function fileToDataURL(file) {
     reader.readAsDataURL(file);
   });
 }
+
 
 
 
