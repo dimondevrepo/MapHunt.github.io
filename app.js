@@ -17,10 +17,12 @@ import {
 
 // ----------------- CONFIGURE THIS -----------------
 const firebaseConfig = {
-  apiKey: "REPLACE_WITH_YOURS",
-  authDomain: "REPLACE_WITH_YOURS.firebaseapp.com",
-  databaseURL: "https://REPLACE_WITH_YOURS.firebaseio.com",
-  projectId: "REPLACE_WITH_YOURS"
+  apiKey: "AIzaSyDJfCUOEXDZ7peKegYIf3FWLBc9vETyaJA",
+  authDomain: "maphunt-8ca4e.firebaseapp.com",
+  projectId: "maphunt-8ca4e",
+  storageBucket: "maphunt-8ca4e.firebasestorage.app",
+  messagingSenderId: "974675337809",
+  appId: "1:974675337809:web:2bf45fe8068c8ac9ab8e70"
 };
 // -------------------------------------------------
 
@@ -299,3 +301,4 @@ function fileToDataURL(file) {
     reader.readAsDataURL(file);
   });
 }
+
