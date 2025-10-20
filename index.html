@@ -3,21 +3,32 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Game Screenshot Submitter</title>
+  <title>Game Screenshot Challenge</title>
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
   <main class="container">
-    <h1>Game Screenshot Submitter</h1>
+    <h1>Screenshot Game</h1>
 
+    <!-- Timer / Game state -->
+    <div id="game-header" class="card hidden">
+      <div class="row">
+        <div><strong>Timer:</strong> <span id="timer-display">--:--</span></div>
+        <div><strong>State:</strong> <span id="game-state">waiting</span></div>
+      </div>
+    </div>
+
+    <!-- Login Section -->
     <section id="login-section" class="card">
       <h2>Enter nickname (anonymous)</h2>
       <input id="nickname-input" placeholder="Pick a nickname" maxlength="30" />
-      <button id="start-btn">Start (anonymous)</button>
-      <p class="muted">You will be signed in anonymously. Nickname is stored in Firestore for display only.</p>
+      <button id="start-btn">Join Lobby</button>
+      <p class="muted">You will be signed in anonymously. Nickname is stored for display only.</p>
     </section>
 
-    <section id="submit-section" class="card hidden">
+    <!-- Lobby Section -->
+    <section id="lobby-section" class="card hidden">
+      <h2>Lobby</h2>
       <div class="row">
         <div>
           <strong>Signed in as:</strong> <span id="display-nickname"></span>
@@ -27,166 +38,170 @@
         </div>
       </div>
 
-      <h2>Submit a screenshot</h2>
+      <h3>Players in lobby:</h3>
+      <ul id="player-list"></ul>
+      <button id="start-game-btn" class="primary">Start Game</button>
+    </section>
 
+    <!-- Submission Section -->
+    <section id="submit-section" class="card hidden">
+      <h2>Submit a Screenshot</h2>
       <label for="category">Category</label>
       <select id="category">
-        <option value="">-- ЛЕГКО --</option>
-<option value="option">Белая машина</option>
-<option value="option">Автобусная остановка</option>
-<option value="option">Дом с красной крышей</option>
-<option value="option">Уличная собака</option>
-<option value="option">Синяя дверь</option>
-<option value="option">Скамейка в парке</option>
-<option value="option">Велосипед</option>
-<option value="option">Уличный фонарь</option>
-<option value="option">Горка на детской площадке</option>
-<option value="option">Белый фургон</option>
-<option value="option">Урна для мусора</option>
-<option value="option">Пешеходный переход</option>
-<option value="option">Знак «Стоп»</option>
-<option value="option">Рекламный щит</option>
-<option value="option">Грузовик доставки</option>
-<option value="option">Цветочная клумба</option>
-<option value="option">Балкон с растениями</option>
-<option value="option">Такси</option>
-<option value="option">Забор с граффити</option>
-<option value="option">Светофор</option>
-<option value="option">Фонтан</option>
-<option value="option">Городской автобус</option>
-<option value="option">Мост</option>
-<option value="option">Трактор</option>
-<option value="option">Киоск</option>
-<option value="option">Красная машина</option>
-<option value="option">Велосипед без человека</option>
-<option value="option">Дерево у дороги</option>
-<option value="option">Зебра-переход</option>
-<option value="option">Почтовый ящик</option>
-<option value="option">Маленький магазин</option>
-<option value="option">Голубь</option>
-<option value="option">Камера видеонаблюдения</option>
-<option value="option">Фургон с логотипом</option>
-<option value="option">Такси с шашечками</option>
-<option value="option">Человек на тротуаре</option>
-<option value="option">Парк с деревьями</option>
-<option value="option">Дорожный конус</option>
-<option value="option">Автомойка</option>
-<option value="option">Парковочный знак</option>
-<option value="option">Автомобиль с прицепом</option>
-<option value="option">Дорожный указатель</option>
-<option value="option">Машина скорой помощи</option>
-<option value="option">Телефонная будка</option>
-<option value="option">Маленький мостик</option>
-<option value="option">Контейнер для пластика</option>
-<option value="option">Лавочка у остановки</option>
-<option value="option">Красный автобус</option>
-<option value="option">Такси возле магазина</option>
-<option value="option">Фургон с открытой дверью</option>
+         <option value="">-- ЛЕГКО --</option>
+        <option value="option">Белая машина</option>
+        <option value="option">Автобусная остановка</option>
+        <option value="option">Дом с красной крышей</option>
+        <option value="option">Уличная собака</option>
+        <option value="option">Синяя дверь</option>
+        <option value="option">Скамейка в парке</option>
+        <option value="option">Велосипед</option>
+        <option value="option">Уличный фонарь</option>
+        <option value="option">Горка на детской площадке</option>
+        <option value="option">Белый фургон</option>
+        <option value="option">Урна для мусора</option>
+        <option value="option">Пешеходный переход</option>
+        <option value="option">Знак «Стоп»</option>
+        <option value="option">Рекламный щит</option>
+        <option value="option">Грузовик доставки</option>
+        <option value="option">Цветочная клумба</option>
+        <option value="option">Балкон с растениями</option>
+        <option value="option">Такси</option>
+        <option value="option">Забор с граффити</option>
+        <option value="option">Светофор</option>
+        <option value="option">Фонтан</option>
+        <option value="option">Городской автобус</option>
+        <option value="option">Мост</option>
+        <option value="option">Трактор</option>
+        <option value="option">Киоск</option>
+        <option value="option">Красная машина</option>
+        <option value="option">Велосипед без человека</option>
+        <option value="option">Дерево у дороги</option>
+        <option value="option">Зебра-переход</option>
+        <option value="option">Почтовый ящик</option>
+        <option value="option">Маленький магазин</option>
+        <option value="option">Голубь</option>
+        <option value="option">Камера видеонаблюдения</option>
+        <option value="option">Фургон с логотипом</option>
+        <option value="option">Такси с шашечками</option>
+        <option value="option">Человек на тротуаре</option>
+        <option value="option">Парк с деревьями</option>
+        <option value="option">Дорожный конус</option>
+        <option value="option">Автомойка</option>
+        <option value="option">Парковочный знак</option>
+        <option value="option">Автомобиль с прицепом</option>
+        <option value="option">Дорожный указатель</option>
+        <option value="option">Машина скорой помощи</option>
+        <option value="option">Телефонная будка</option>
+        <option value="option">Маленький мостик</option>
+        <option value="option">Контейнер для пластика</option>
+        <option value="option">Лавочка у остановки</option>
+        <option value="option">Красный автобус</option>
+        <option value="option">Такси возле магазина</option>
+        <option value="option">Фургон с открытой дверью</option>
+        <option value="">-- СРЕДНЕ--</option>
+        <option value="option">Дом в один этаж</option>
+        <option value="option">Церковь с синей крышей</option>
+        <option value="option">Рыночная палатка</option>
+        <option value="option">Недостроенный дом</option>
+        <option value="option">Машина с открытым багажником</option>
+        <option value="option">Спутниковая антенна</option>
+        <option value="option">Уличный музыкант</option>
+        <option value="option">Водонапорная башня</option>
+        <option value="option">Человек на лестнице</option>
+        <option value="option">Качели</option>
+        <option value="option">Заправка</option>
+        <option value="option">Проезжающий поезд</option>
+        <option value="option">Круговое движение</option>
+        <option value="option">Склад дров</option>
+        <option value="option">Школьный автобус</option>
+        <option value="option">Граффити на стене</option>
+        <option value="option">Телега с лошадью</option>
+        <option value="option">Дорожный памятник</option>
+        <option value="option">Человек в красной куртке</option>
+        <option value="option">Трактор в поле</option>
+        <option value="option">Дом с зелёной крышей</option>
+        <option value="option">Переполненная парковка</option>
+        <option value="option">Человек с телефоном</option>
+        <option value="option">Указатель с несколькими стрелками</option>
+        <option value="option">Солнечная панель</option>
+        <option value="option">Ветряная турбина</option>
+        <option value="option">Двор с детской площадкой</option>
+        <option value="option">Автобус без людей внутри</option>
+        <option value="option">Старый автомобиль</option>
+        <option value="option">Лестница на фасаде</option>
+        <option value="option">Магазин у дороги</option>
+        <option value="option">Уличный фонарь с рекламой</option>
+        <option value="option">Памятник или статуя</option>
+        <option value="option">Кафе с террасой</option>
+        <option value="option">Человек на самокате</option>
+        <option value="option">Мусорный контейнер переполнен</option>
+        <option value="option">Рекламный баннер</option>
+        <option value="option">Человек в очках</option>
+        <option value="option">Дом с гаражом</option>
+        <option value="option">Собака на поводке</option>
+        <option value="option">Парковка у магазина</option>
+        <option value="option">Заброшенный дом</option>
+        <option value="option">Мост с перилами</option>
+        <option value="option">Фонтан в парке</option>
+        <option value="option">Автобус на остановке</option>
+        <option value="option">Человек в рабочей одежде</option>
+        <option value="option">Каменная стена</option>
+        <option value="option">Сельский магазин</option>
+        <option value="option">Дети на качелях</option>
+        <option value="option">Ворота с табличкой</option>
 
-<option value="">-- СРЕДНЕ--</option>
-<option value="option">Дом в один этаж</option>
-<option value="option">Церковь с синей крышей</option>
-<option value="option">Рыночная палатка</option>
-<option value="option">Недостроенный дом</option>
-<option value="option">Машина с открытым багажником</option>
-<option value="option">Спутниковая антенна</option>
-<option value="option">Уличный музыкант</option>
-<option value="option">Водонапорная башня</option>
-<option value="option">Человек на лестнице</option>
-<option value="option">Качели</option>
-<option value="option">Заправка</option>
-<option value="option">Проезжающий поезд</option>
-<option value="option">Круговое движение</option>
-<option value="option">Склад дров</option>
-<option value="option">Школьный автобус</option>
-<option value="option">Граффити на стене</option>
-<option value="option">Телега с лошадью</option>
-<option value="option">Дорожный памятник</option>
-<option value="option">Человек в красной куртке</option>
-<option value="option">Трактор в поле</option>
-<option value="option">Дом с зелёной крышей</option>
-<option value="option">Переполненная парковка</option>
-<option value="option">Человек с телефоном</option>
-<option value="option">Указатель с несколькими стрелками</option>
-<option value="option">Солнечная панель</option>
-<option value="option">Ветряная турбина</option>
-<option value="option">Двор с детской площадкой</option>
-<option value="option">Автобус без людей внутри</option>
-<option value="option">Старый автомобиль</option>
-<option value="option">Лестница на фасаде</option>
-<option value="option">Магазин у дороги</option>
-<option value="option">Уличный фонарь с рекламой</option>
-<option value="option">Памятник или статуя</option>
-<option value="option">Кафе с террасой</option>
-<option value="option">Человек на самокате</option>
-<option value="option">Мусорный контейнер переполнен</option>
-<option value="option">Рекламный баннер</option>
-<option value="option">Человек в очках</option>
-<option value="option">Дом с гаражом</option>
-<option value="option">Собака на поводке</option>
-<option value="option">Парковка у магазина</option>
-<option value="option">Заброшенный дом</option>
-<option value="option">Мост с перилами</option>
-<option value="option">Фонтан в парке</option>
-<option value="option">Автобус на остановке</option>
-<option value="option">Человек в рабочей одежде</option>
-<option value="option">Каменная стена</option>
-<option value="option">Сельский магазин</option>
-<option value="option">Дети на качелях</option>
-<option value="option">Ворота с табличкой</option>
-
-<option value="">-- СЛОЖНО --</option>
-<option value="option">Мужчина на спортивном байке</option>
-<option value="option">Свадебная машина</option>
-<option value="option">Полицейский</option>
-<option value="option">Ребёнок с воздушным змеем</option>
-<option value="option">Человек с пакетами</option>
-<option value="option">Собака, бегущая за машиной</option>
-<option value="option">Открытые ворота с человеком за ними</option>
-<option value="option">Всадник на лошади</option>
-<option value="option">Место ДТП</option>
-<option value="option">Человек в шлеме</option>
-<option value="option">Зонтик в солнечную погоду</option>
-<option value="option">Человек в форме</option>
-<option value="option">Кто-то фотографирует</option>
-<option value="option">Велосипед с корзиной</option>
-<option value="option">Автобус с пассажирами</option>
-<option value="option">Человек с коляской</option>
-<option value="option">Мотоцикл с пассажиром</option>
-<option value="option">Рабочий красит стену</option>
-<option value="option">Птица в полёте</option>
-<option value="option">Трактор с прицепом</option>
-<option value="option">Женщина на велосипеде в платье</option>
-<option value="option">Продавец фруктов</option>
-<option value="option">Человек с рюкзаком на переходе</option>
-<option value="option">Кошка в окне</option>
-<option value="option">Двое пожимающих руки</option>
-<option value="option">Человек несёт чемодан</option>
-<option value="option">Ребёнок на самокате</option>
-<option value="option">Рабочий моет окна</option>
-<option value="option">Женщина с зонтом под дождём</option>
-<option value="option">Человек на скамейке с ноутбуком</option>
-<option value="option">Автомобиль с багажом на крыше</option>
-<option value="option">Пешеход с наушниками</option>
-<option value="option">Велосипедист без шлема</option>
-<option value="option">Женщина с коляской и ребёнком</option>
-<option value="option">Человек с пакетом из супермаркета</option>
-<option value="option">Рабочий с каской</option>
-<option value="option">Машина с прицепом-лодкой</option>
-<option value="option">Женщина с цветами</option>
-<option value="option">Люди с чемоданами</option>
-<option value="option">Мужчина разговаривает по телефону</option>
-<option value="option">Уличный художник</option>
-<option value="option">Пожилой человек с тростью</option>
-<option value="option">Женщина в длинном пальто летом</option>
-<option value="option">Пожарная машина</option>
-<option value="option">Человек, переходящий дорогу на красный</option>
-<option value="option">Двое людей на скутере</option>
-<option value="option">Женщина несёт ребёнка на руках</option>
-<option value="option">Мужчина в камуфляже</option>
-<option value="option">Человек на велосипеде без рук</option>
-<option value="option">Собака с ошейником и косточкой</option>
-
+        <option value="">-- СЛОЖНО --</option>
+        <option value="option">Мужчина на спортивном байке</option>
+        <option value="option">Свадебная машина</option>
+        <option value="option">Полицейский</option>
+        <option value="option">Ребёнок с воздушным змеем</option>
+        <option value="option">Человек с пакетами</option>
+        <option value="option">Собака, бегущая за машиной</option>
+        <option value="option">Открытые ворота с человеком за ними</option>
+        <option value="option">Всадник на лошади</option>
+        <option value="option">Место ДТП</option>
+        <option value="option">Человек в шлеме</option>
+        <option value="option">Зонтик в солнечную погоду</option>
+        <option value="option">Человек в форме</option>
+        <option value="option">Кто-то фотографирует</option>
+        <option value="option">Велосипед с корзиной</option>
+        <option value="option">Автобус с пассажирами</option>
+        <option value="option">Человек с коляской</option>
+        <option value="option">Мотоцикл с пассажиром</option>
+        <option value="option">Рабочий красит стену</option>
+        <option value="option">Птица в полёте</option>
+        <option value="option">Трактор с прицепом</option>
+        <option value="option">Женщина на велосипеде в платье</option>
+        <option value="option">Продавец фруктов</option>
+        <option value="option">Человек с рюкзаком на переходе</option>
+        <option value="option">Кошка в окне</option>
+        <option value="option">Двое пожимающих руки</option>
+        <option value="option">Человек несёт чемодан</option>
+        <option value="option">Ребёнок на самокате</option>
+        <option value="option">Рабочий моет окна</option>
+        <option value="option">Женщина с зонтом под дождём</option>
+        <option value="option">Человек на скамейке с ноутбуком</option>
+        <option value="option">Автомобиль с багажом на крыше</option>
+        <option value="option">Пешеход с наушниками</option>
+        <option value="option">Велосипедист без шлема</option>
+        <option value="option">Женщина с коляской и ребёнком</option>
+        <option value="option">Человек с пакетом из супермаркета</option>
+        <option value="option">Рабочий с каской</option>
+        <option value="option">Машина с прицепом-лодкой</option>
+        <option value="option">Женщина с цветами</option>
+        <option value="option">Люди с чемоданами</option>
+        <option value="option">Мужчина разговаривает по телефону</option>
+        <option value="option">Уличный художник</option>
+        <option value="option">Пожилой человек с тростью</option>
+        <option value="option">Женщина в длинном пальто летом</option>
+        <option value="option">Пожарная машина</option>
+        <option value="option">Человек, переходящий дорогу на красный</option>
+        <option value="option">Двое людей на скутере</option>
+        <option value="option">Женщина несёт ребёнка на руках</option>
+        <option value="option">Мужчина в камуфляже</option>
+        <option value="option">Человек на велосипеде без рук</option>
+        <option value="option">Собака с ошейником и косточкой</option>
       </select>
 
       <label for="file">Choose image file (png/jpg) or paste image (Ctrl+V)</label>
@@ -202,11 +217,22 @@
       </div>
 
       <div id="status" class="muted"></div>
+
+      <h3>Players Submitted Categories:</h3>
+      <ul id="submitted-categories"></ul>
+
+      <button id="reveal-btn" class="primary hidden">Reveal All Submissions</button>
     </section>
 
-    <section id="recent-section" class="card hidden">
-      <h2>Recent Submissions (public)</h2>
-      <ul id="recent-list"></ul>
+    <!-- Reveal Section -->
+    <section id="reveal-section" class="card hidden">
+      <h2>All Submissions</h2>
+      <table id="reveal-table">
+        <thead>
+          <tr><th>Nickname</th><th>Category</th><th>Screenshot</th></tr>
+        </thead>
+        <tbody></tbody>
+      </table>
     </section>
   </main>
 
