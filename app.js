@@ -1,6 +1,3 @@
-// app.js - ES module. Make sure index.html loads it with type="module".
-
-// --- FIREBASE SDK V9 modular imports (CDN) ---
 import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-app.js";
 import {
   getAuth,
@@ -9,122 +6,202 @@ import {
   onAuthStateChanged
 } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-auth.js";
 import {
-  getFirestore,
-  collection,
-  addDoc,
+  getDatabase,
+  ref,
+  set,
+  onValue,
+  push,
   serverTimestamp,
-  setDoc,
-  doc,
-  query,
-  orderBy,
-  limit,
-  getDocs
-} from "https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore.js";
+  update
+} from "https://www.gstatic.com/firebasejs/9.22.2/firebase-database.js";
 
 // ----------------- CONFIGURE THIS -----------------
 const firebaseConfig = {
-  apiKey: "AIzaSyDJfCUOEXDZ7peKegYIf3FWLBc9vETyaJA",
-  authDomain: "maphunt-8ca4e.firebaseapp.com",
-  projectId: "maphunt-8ca4e",
-  storageBucket: "maphunt-8ca4e.firebasestorage.app",
-  messagingSenderId: "974675337809",
-  appId: "1:974675337809:web:2bf45fe8068c8ac9ab8e70"
+  apiKey: "REPLACE_WITH_YOURS",
+  authDomain: "REPLACE_WITH_YOURS.firebaseapp.com",
+  databaseURL: "https://REPLACE_WITH_YOURS.firebaseio.com",
+  projectId: "REPLACE_WITH_YOURS"
 };
 // -------------------------------------------------
 
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
-const db = getFirestore(app);
+const db = getDatabase(app);
 
-//
-// UI references
-//
+// UI elements
 const nicknameInput = document.getElementById("nickname-input");
 const startBtn = document.getElementById("start-btn");
 const loginSection = document.getElementById("login-section");
 
-const submitSection = document.getElementById("submit-section");
+const lobbySection = document.getElementById("lobby-section");
+const playerList = document.getElementById("player-list");
 const displayNickname = document.getElementById("display-nickname");
 const signoutBtn = document.getElementById("signout-btn");
+const startGameBtn = document.getElementById("start-game-btn");
+
+const submitSection = document.getElementById("submit-section");
 const categoryEl = document.getElementById("category");
 const fileInput = document.getElementById("file-input");
 const previewCanvas = document.getElementById("preview-canvas");
 const submitBtn = document.getElementById("submit-btn");
 const clearBtn = document.getElementById("clear-btn");
 const statusEl = document.getElementById("status");
-const recentSection = document.getElementById("recent-section");
-const recentList = document.getElementById("recent-list");
+const submittedCategories = document.getElementById("submitted-categories");
+const revealBtn = document.getElementById("reveal-btn");
+
+const revealSection = document.getElementById("reveal-section");
+const revealTableBody = document.querySelector("#reveal-table tbody");
+
+const gameHeader = document.getElementById("game-header");
+const timerDisplay = document.getElementById("timer-display");
+const gameStateEl = document.getElementById("game-state");
 
 let currentUser = null;
 let currentNickname = "";
 let currentImageDataUrl = null;
+let lobbyId = "main-lobby";
+let timerInterval = null;
 
-// Utility: show status
-function setStatus(msg, isError = false) {
-  statusEl.textContent = msg;
-  statusEl.style.color = isError ? "#ffb4b4" : "";
-}
-
-// Sign in if user clicks start
+// --- Auth + Login ---
 startBtn.addEventListener("click", async () => {
   const nick = (nicknameInput.value || "").trim();
-  if (!nick || nick.length < 2) {
-    setStatus("Please enter a nickname (at least 2 characters).", true);
-    return;
-  }
-  setStatus("Signing in anonymously...");
+  if (!nick) return setStatus("Enter a nickname.", true);
+  currentNickname = nick;
+  setStatus("Signing in...");
+
   try {
     const cred = await signInAnonymously(auth);
-    // store nickname locally then push to Firestore 'users' collection
-    currentNickname = nick;
-    await setDoc(doc(db, "users", cred.user.uid), {
-      uid: cred.user.uid,
+    const uid = cred.user.uid;
+    // Add player to lobby in Realtime DB
+    await set(ref(db, `lobbies/${lobbyId}/players/${uid}`), {
       nickname: currentNickname,
-      createdAt: serverTimestamp()
+      submitted: false
     });
-    setStatus("Signed in!");
+    setStatus("Joined lobby!");
   } catch (err) {
     console.error(err);
     setStatus("Sign-in failed: " + err.message, true);
   }
 });
 
-// Auth state observer
+// Auth listener
 onAuthStateChanged(auth, (user) => {
+  currentUser = user;
   if (user) {
-    currentUser = user;
     loginSection.classList.add("hidden");
-    submitSection.classList.remove("hidden");
-    recentSection.classList.remove("hidden");
+    lobbySection.classList.remove("hidden");
+    gameHeader.classList.remove("hidden");
     displayNickname.textContent = currentNickname || `anon-${user.uid.slice(0,6)}`;
-    loadRecentSubmissions();
+    setupLobbyListeners();
+    setupGameListeners();
   } else {
-    currentUser = null;
     loginSection.classList.remove("hidden");
+    lobbySection.classList.add("hidden");
     submitSection.classList.add("hidden");
-    recentSection.classList.add("hidden");
-    displayNickname.textContent = "";
-    setStatus("");
-    currentImageDataUrl = null;
+    revealSection.classList.add("hidden");
+    gameHeader.classList.add("hidden");
     clearCanvas();
   }
 });
 
-// Sign out
 signoutBtn.addEventListener("click", async () => {
+  if (currentUser) {
+    await set(ref(db, `lobbies/${lobbyId}/players/${currentUser.uid}`), null);
+  }
   await signOut(auth);
   currentNickname = "";
-  nicknameInput.value = "";
 });
 
-// File input handling
+// --- Lobby / Game ---
+startGameBtn.addEventListener("click", () => {
+  // anyone can start game
+  update(ref(db, `lobbies/${lobbyId}`), {
+    gameState: "started",
+    timerStart: Date.now()
+  });
+});
+
+// Listen to lobby players + game state
+function setupLobbyListeners() {
+  onValue(ref(db, `lobbies/${lobbyId}/players`), (snap) => {
+    const val = snap.val() || {};
+    playerList.innerHTML = "";
+    Object.values(val).forEach(p => {
+      const li = document.createElement("li");
+      li.textContent = p.nickname + (p.submitted ? " ✅" : "");
+      playerList.appendChild(li);
+    });
+  });
+}
+
+// --- Game / Timer ---
+function setupGameListeners() {
+  const lobbyRef = ref(db, `lobbies/${lobbyId}`);
+  onValue(lobbyRef, (snap) => {
+    const data = snap.val() || {};
+    const state = data.gameState || "waiting";
+    gameStateEl.textContent = state;
+
+    if (state === "started") {
+      lobbySection.classList.add("hidden");
+      submitSection.classList.remove("hidden");
+      revealBtn.classList.add("hidden");
+      // start timer
+      startTimer(data.timerStart || Date.now());
+    } else if (state === "ended") {
+      submitSection.classList.add("hidden");
+      revealSection.classList.remove("hidden");
+      stopTimer();
+      populateRevealTable(data.submissions || {});
+    } else {
+      submitSection.classList.add("hidden");
+      revealSection.classList.add("hidden");
+    }
+
+    // Show submitted categories
+    if (data.submissions) {
+      submittedCategories.innerHTML = "";
+      Object.values(data.submissions).forEach(s => {
+        const li = document.createElement("li");
+        li.textContent = `${s.nickname}: ${s.category}`;
+        submittedCategories.appendChild(li);
+      });
+    }
+  });
+}
+
+// --- Timer ---
+function startTimer(startTime) {
+  stopTimer();
+  function updateTimer() {
+    const now = Date.now();
+    const end = startTime + 15*60*1000; // 15 mins
+    let remaining = end - now;
+    if (remaining <= 0) {
+      remaining = 0;
+      stopTimer();
+      update(ref(db, `lobbies/${lobbyId}`), { gameState: "ended" });
+      revealBtn.classList.remove("hidden");
+    }
+    const minutes = Math.floor(remaining/60000);
+    const seconds = Math.floor((remaining%60000)/1000);
+    timerDisplay.textContent = `${minutes}:${seconds.toString().padStart(2,'0')}`;
+  }
+  updateTimer();
+  timerInterval = setInterval(updateTimer, 1000);
+}
+
+function stopTimer() {
+  if (timerInterval) clearInterval(timerInterval);
+}
+
+// --- Submission ---
 fileInput.addEventListener("change", async (ev) => {
   const file = ev.target.files?.[0];
   if (!file) return;
   await handleFileImage(file);
 });
 
-// Paste handling (Ctrl+V) to paste images
 document.addEventListener("paste", async (ev) => {
   const items = ev.clipboardData && ev.clipboardData.items;
   if (!items) return;
@@ -140,7 +217,6 @@ document.addEventListener("paste", async (ev) => {
   }
 });
 
-// Clear button
 clearBtn.addEventListener("click", () => {
   currentImageDataUrl = null;
   clearCanvas();
@@ -148,182 +224,78 @@ clearBtn.addEventListener("click", () => {
   fileInput.value = "";
 });
 
-// Submit button
 submitBtn.addEventListener("click", async () => {
   setStatus("");
-  if (!currentUser) {
-    setStatus("You must be signed in first.", true);
-    return;
-  }
   const category = categoryEl.value;
-  if (!category) {
-    setStatus("Please select a category.", true);
-    return;
-  }
-  if (!currentImageDataUrl) {
-    setStatus("Please select or paste an image first.", true);
-    return;
-  }
+  if (!category || !currentImageDataUrl) return setStatus("Choose category & image.", true);
 
-  // Sanity size check: prefer < 800 KB to be safe (Firestore limit ~1 MB)
-  const approxBytes = Math.ceil((currentImageDataUrl.length - "data:image/jpeg;base64,".length) * 3 / 4);
-  if (approxBytes > 900000) {
-    setStatus("Image too large after compression (~>900 KB). Try lowering quality or use a smaller image.", true);
-    return;
-  }
+  const submissionRef = ref(db, `lobbies/${lobbyId}/submissions/${currentUser.uid}`);
+  await set(submissionRef, {
+    nickname: currentNickname,
+    category,
+    imageBase64: currentImageDataUrl
+  });
 
-  setStatus("Uploading screenshot to Firestore...");
-  try {
-    const docRef = await addDoc(collection(db, "submissions"), {
-      uid: currentUser.uid,
-      nickname: currentNickname || `anon-${currentUser.uid.slice(0,6)}`,
-      category,
-      imageBase64: currentImageDataUrl,
-      createdAt: serverTimestamp()
-    });
-    setStatus("Submitted! Thank you. (id: " + docRef.id + ")");
-    // clear preview
-    currentImageDataUrl = null;
-    clearCanvas();
-    fileInput.value = "";
-    // refresh recent
-    await loadRecentSubmissions();
-  } catch (err) {
-    console.error(err);
-    setStatus("Upload failed: " + err.message, true);
-  }
+  // mark as submitted
+  await update(ref(db, `lobbies/${lobbyId}/players/${currentUser.uid}`), {
+    submitted: true
+  });
+
+  setStatus("Submitted!");
+  currentImageDataUrl = null;
+  clearCanvas();
+  fileInput.value = "";
 });
 
-// Handle file image: read, resize, compress, and preview
-async function handleFileImage(file) {
-  if (!file.type.startsWith("image/")) {
-    setStatus("Selected file is not an image.", true);
-    return;
-  }
-  setStatus("Processing image...");
-  try {
-    const dataUrl = await readFileAsDataURL(file);
-    // Resize/compress
-    const processed = await resizeAndCompressDataUrl(dataUrl, { maxWidth: 1200, quality: 0.7 });
-    // Estimate size in bytes
-    const approxBytes = Math.ceil((processed.length - processed.indexOf(",") - 1) * 3 / 4);
-    if (approxBytes > 1000000) {
-      setStatus("Processed image still too large (>1MB). Try cropping or lower quality.", true);
-      return;
-    }
-    currentImageDataUrl = processed;
-    drawToCanvas(processed);
-    setStatus(`Ready to submit — approx ${(approxBytes/1024).toFixed(0)} KB`);
-  } catch (err) {
-    console.error(err);
-    setStatus("Failed to process image: " + err.message, true);
-  }
-}
+// Reveal button (manual override)
+revealBtn.addEventListener("click", () => {
+  update(ref(db, `lobbies/${lobbyId}`), { gameState: "ended" });
+});
 
-// Read file as data URL
-function readFileAsDataURL(file) {
-  return new Promise((res, rej) => {
-    const fr = new FileReader();
-    fr.onload = () => res(fr.result);
-    fr.onerror = rej;
-    fr.readAsDataURL(file);
+// --- Reveal table ---
+function populateRevealTable(submissions) {
+  revealTableBody.innerHTML = "";
+  Object.values(submissions).forEach(s => {
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td>${s.nickname}</td>
+      <td>${s.category}</td>
+      <td><img src="${s.imageBase64}" /></td>
+    `;
+    revealTableBody.appendChild(tr);
   });
 }
 
-// Resize and compress function: returns data URL (jpeg by default)
-async function resizeAndCompressDataUrl(dataUrl, { maxWidth = 1200, quality = 0.75 } = {}) {
-  return new Promise((resolve, reject) => {
-    const img = new Image();
-    img.onload = () => {
-      // compute size preserving aspect ratio
-      let { width, height } = img;
-      if (width > maxWidth) {
-        const ratio = maxWidth / width;
-        width = Math.round(width * ratio);
-        height = Math.round(height * ratio);
-      }
-      // canvas draw
-      const canvas = document.createElement("canvas");
-      canvas.width = width;
-      canvas.height = height;
-      const ctx = canvas.getContext("2d");
-      // clear
-      ctx.fillStyle = "#000";
-      ctx.fillRect(0, 0, width, height);
-      ctx.drawImage(img, 0, 0, width, height);
-      // compress to JPEG
-      try {
-        const out = canvas.toDataURL("image/jpeg", quality);
-        resolve(out);
-      } catch (err) {
-        reject(err);
-      }
-    };
-    img.onerror = (e) => reject(new Error("Failed to load image for resizing."));
-    img.src = dataUrl;
-  });
-}
-
-// Draw preview on page canvas (fit)
-function drawToCanvas(dataUrl) {
-  const ctx = previewCanvas.getContext("2d");
-  const img = new Image();
-  img.onload = () => {
-    // fit image into canvas while preserving aspect ratio
-    const cw = previewCanvas.width;
-    const ch = previewCanvas.height;
-    ctx.clearRect(0,0,cw,ch);
-    // compute scale
-    const scale = Math.min(cw / img.width, ch / img.height);
-    const w = img.width * scale;
-    const h = img.height * scale;
-    const x = (cw - w) / 2;
-    const y = (ch - h) / 2;
-    ctx.fillStyle = "#081222";
-    ctx.fillRect(0,0,cw,ch);
-    ctx.drawImage(img, x, y, w, h);
-  };
-  img.src = dataUrl;
+// --- Utilities ---
+function setStatus(msg, isError=false) {
+  statusEl.textContent = msg;
+  statusEl.style.color = isError ? "red" : "white";
 }
 
 function clearCanvas() {
   const ctx = previewCanvas.getContext("2d");
   ctx.clearRect(0, 0, previewCanvas.width, previewCanvas.height);
-  ctx.fillStyle = "#081222";
-  ctx.fillRect(0,0,previewCanvas.width, previewCanvas.height);
 }
 
-// Load recent submissions (public read)
-async function loadRecentSubmissions() {
-  recentList.innerHTML = "<li>Loading...</li>";
-  try {
-    const q = query(collection(db, "submissions"), orderBy("createdAt", "desc"), limit(10));
-    const snap = await getDocs(q);
-    recentList.innerHTML = "";
-    snap.forEach(docSnap => {
-      const data = docSnap.data();
-      const li = document.createElement("li");
-      const thumb = document.createElement("img");
-      thumb.src = data.imageBase64;
-      thumb.alt = data.category || "screenshot";
-      const info = document.createElement("div");
-      info.innerHTML = `<strong>${escapeHtml(data.nickname||"anon")}</strong> <span class="muted">(${data.category||'—'})</span><br><small class="muted">${(data.createdAt && data.createdAt.toDate) ? data.createdAt.toDate().toLocaleString() : ''}</small>`;
-      li.appendChild(thumb);
-      li.appendChild(info);
-      recentList.appendChild(li);
-    });
-    if (!snap.size) recentList.innerHTML = "<li class='muted'>No submissions yet.</li>";
-  } catch (err) {
-    console.error(err);
-    recentList.innerHTML = "<li class='muted'>Failed to load recent submissions.</li>";
-  }
+async function handleFileImage(file) {
+  const img = new Image();
+  img.src = await fileToDataURL(file);
+  await new Promise(r => img.onload = r);
+  const ctx = previewCanvas.getContext("2d");
+  ctx.clearRect(0,0,previewCanvas.width, previewCanvas.height);
+  // resize image to fit canvas
+  const ratio = Math.min(previewCanvas.width/img.width, previewCanvas.height/img.height);
+  const w = img.width*ratio;
+  const h = img.height*ratio;
+  ctx.drawImage(img, 0, 0, w, h);
+  currentImageDataUrl = previewCanvas.toDataURL("image/jpeg", 0.7);
 }
 
-// small helper to escape HTML for display safety
-function escapeHtml(s) {
-  if (!s) return "";
-  return s.replace(/[&<>"']/g, (m) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+function fileToDataURL(file) {
+  return new Promise((res, rej) => {
+    const reader = new FileReader();
+    reader.onload = () => res(reader.result);
+    reader.onerror = e => rej(e);
+    reader.readAsDataURL(file);
+  });
 }
-
-// initial canvas background
-clearCanvas();
