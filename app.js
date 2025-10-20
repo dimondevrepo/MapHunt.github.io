@@ -9,6 +9,7 @@ import {
   getDatabase,
   ref,
   set,
+  push,
   onValue,
   update,
   remove
@@ -344,5 +345,6 @@ window.update = update;
 window.endGame = () => {
   update(ref(db, `lobbies/${lobbyId}`), { gameState: "ended" });
 };
+
 
 
