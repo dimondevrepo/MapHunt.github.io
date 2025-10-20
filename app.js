@@ -307,6 +307,13 @@ function fileToDataURL(file) {
 window.db = db;
 window.ref = ref;
 window.update = update;
+window.endGame = () => {
+  import("https://www.gstatic.com/firebasejs/9.22.2/firebase-database.js").then((dbMod) => {
+    const { ref, update } = dbMod;
+    update(ref(window.db, "lobbies/main-lobby"), { gameState: "ended" });
+  });
+};
+
 
 
 
