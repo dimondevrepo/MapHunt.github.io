@@ -163,14 +163,12 @@ function setupGameListeners() {
     }
 
     // Show submitted categories
+    submittedCategories.innerHTML = "";
     if (data.submissions) {
-      submittedCategories.innerHTML = "";
-      Object.values(data.submissions).forEach(s => {
-        const li = document.createElement("li");
-        li.textContent = `${s.nickname}: ${s.category}`;
-        submittedCategories.appendChild(li);
-      });
-    }
+    Object.values(data.submissions).forEach(s => {
+    const li = document.createElement("li");
+    li.textContent = `${s.nickname}: ${s.category} ✅`;
+    submittedCategories.appendChild(li);
   });
 }
 
@@ -308,13 +306,7 @@ window.db = db;
 window.ref = ref;
 window.update = update;
 window.endGame = () => {
-  import("https://www.gstatic.com/firebasejs/9.22.2/firebase-database.js").then((dbMod) => {
-    const { ref, update } = dbMod;
-    update(ref(window.db, "lobbies/main-lobby"), { gameState: "ended" });
-  });
+  // window.db, ref, update are already defined
+  update(ref(window.db, "lobbies/main-lobby"), { gameState: "ended" });
 };
-
-
-
-
 
