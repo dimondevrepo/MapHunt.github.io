@@ -3,21 +3,32 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Game Screenshot Submitter</title>
+  <title>Game Screenshot Challenge</title>
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
   <main class="container">
-    <h1>Game Screenshot Submitter</h1>
+    <h1>Screenshot Game</h1>
 
+    <!-- Timer / Game state -->
+    <div id="game-header" class="card hidden">
+      <div class="row">
+        <div><strong>Timer:</strong> <span id="timer-display">--:--</span></div>
+        <div><strong>State:</strong> <span id="game-state">waiting</span></div>
+      </div>
+    </div>
+
+    <!-- Login Section -->
     <section id="login-section" class="card">
       <h2>Enter nickname (anonymous)</h2>
       <input id="nickname-input" placeholder="Pick a nickname" maxlength="30" />
-      <button id="start-btn">Start (anonymous)</button>
-      <p class="muted">You will be signed in anonymously. Nickname is stored in Firestore for display only.</p>
+      <button id="start-btn">Join Lobby</button>
+      <p class="muted">You will be signed in anonymously. Nickname is stored for display only.</p>
     </section>
 
-    <section id="submit-section" class="card hidden">
+    <!-- Lobby Section -->
+    <section id="lobby-section" class="card hidden">
+      <h2>Lobby</h2>
       <div class="row">
         <div>
           <strong>Signed in as:</strong> <span id="display-nickname"></span>
@@ -27,8 +38,14 @@
         </div>
       </div>
 
-      <h2>Submit a screenshot</h2>
+      <h3>Players in lobby:</h3>
+      <ul id="player-list"></ul>
+      <button id="start-game-btn" class="primary">Start Game</button>
+    </section>
 
+    <!-- Submission Section -->
+    <section id="submit-section" class="card hidden">
+      <h2>Submit a Screenshot</h2>
       <label for="category">Category</label>
       <select id="category">
         <option value="">-- choose category --</option>
@@ -52,15 +69,26 @@
       </div>
 
       <div id="status" class="muted"></div>
+
+      <h3>Players Submitted Categories:</h3>
+      <ul id="submitted-categories"></ul>
+
+      <button id="reveal-btn" class="primary hidden">Reveal All Submissions</button>
     </section>
 
-    <section id="recent-section" class="card hidden">
-      <h2>Recent Submissions (public)</h2>
-      <ul id="recent-list"></ul>
+    <!-- Reveal Section -->
+    <section id="reveal-section" class="card hidden">
+      <h2>All Submissions</h2>
+      <table id="reveal-table">
+        <thead>
+          <tr><th>Nickname</th><th>Category</th><th>Screenshot</th></tr>
+        </thead>
+        <tbody></tbody>
+      </table>
     </section>
 
     <footer class="muted">
-      Note: images are resized/compressed on the client. Firestore document limit ≈ 1 MB. If upload fails for size, try a smaller/low-quality image.
+      Note: screenshots are resized and stored as base64 in Firebase. Timer is 15 minutes per game.
     </footer>
   </main>
 
