@@ -12,7 +12,8 @@ import {
   onValue,
   push,
   serverTimestamp,
-  update
+  update,
+  remove
 } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-database.js";
 
 // ----------------- CONFIGURE THIS -----------------
@@ -89,7 +90,6 @@ startBtn.addEventListener("click", async () => {
 
 // Auth listener
 onAuthStateChanged(auth, (user) => {
-  console.log("Auth state changed:", user);
   currentUser = user;
   if (user) {
     loginSection.classList.add("hidden");
@@ -110,22 +110,26 @@ onAuthStateChanged(auth, (user) => {
 
 signoutBtn.addEventListener("click", async () => {
   if (currentUser) {
-    await set(ref(db, `lobbies/${lobbyId}/players/${currentUser.uid}`), null);
+    await remove(ref(db, `lobbies/${lobbyId}/players/${currentUser.uid}`));
   }
   await signOut(auth);
   currentNickname = "";
 });
 
 // --- Lobby / Game ---
-startGameBtn.addEventListener("click", () => {
-  // anyone can start game
-  update(ref(db, `lobbies/${lobbyId}`), {
+startGameBtn.addEventListener("click", async () => {
+  // Reset previous game
+  await remove(ref(db, `lobbies/${lobbyId}/players`));
+  await remove(ref(db, `lobbies/${lobbyId}/submissions`));
+  
+  // Start new game
+  await update(ref(db, `lobbies/${lobbyId}`), {
     gameState: "started",
     timerStart: Date.now()
   });
 });
 
-// Listen to lobby players + game state
+// Listen to lobby players
 function setupLobbyListeners() {
   onValue(ref(db, `lobbies/${lobbyId}/players`), (snap) => {
     const val = snap.val() || {};
@@ -138,6 +142,7 @@ function setupLobbyListeners() {
   });
 }
 
+// --- Game / Timer + Submissions ---
 function setupGameListeners() {
   const lobbyRef = ref(db, `lobbies/${lobbyId}`);
   onValue(lobbyRef, (snap) => {
@@ -149,7 +154,6 @@ function setupGameListeners() {
       lobbySection.classList.add("hidden");
       submitSection.classList.remove("hidden");
       revealBtn.classList.add("hidden");
-      // start timer
       startTimer(data.timerStart || Date.now());
     } else if (state === "ended") {
       submitSection.classList.add("hidden");
@@ -169,8 +173,8 @@ function setupGameListeners() {
         li.textContent = `${s.nickname}: ${s.category} ✅`;
         submittedCategories.appendChild(li);
       });
-    } // <- close if
-  }); // <- close onValue
+    }
+  });
 }
 
 // --- Timer ---
@@ -186,8 +190,8 @@ function startTimer(startTime) {
       update(ref(db, `lobbies/${lobbyId}`), { gameState: "ended" });
       revealBtn.classList.remove("hidden");
     }
-    const minutes = Math.floor(remaining/60000);
-    const seconds = Math.floor((remaining%60000)/1000);
+    const minutes = Math.floor(remaining / 60000);
+    const seconds = Math.floor((remaining % 60000) / 1000);
     timerDisplay.textContent = `${minutes}:${seconds.toString().padStart(2,'0')}`;
   }
   updateTimer();
@@ -239,7 +243,6 @@ submitBtn.addEventListener("click", async () => {
     imageBase64: currentImageDataUrl
   });
 
-  // mark as submitted
   await update(ref(db, `lobbies/${lobbyId}/players/${currentUser.uid}`), {
     submitted: true
   });
@@ -250,7 +253,7 @@ submitBtn.addEventListener("click", async () => {
   fileInput.value = "";
 });
 
-// Reveal button (manual override)
+// Reveal button
 revealBtn.addEventListener("click", () => {
   update(ref(db, `lobbies/${lobbyId}`), { gameState: "ended" });
 });
@@ -263,9 +266,34 @@ function populateRevealTable(submissions) {
     tr.innerHTML = `
       <td>${s.nickname}</td>
       <td>${s.category}</td>
-      <td><img src="${s.imageBase64}" /></td>
+      <td><img class="clickable-img" src="${s.imageBase64}" /></td>
     `;
     revealTableBody.appendChild(tr);
+  });
+
+  // Enable click to view full size
+  document.querySelectorAll(".clickable-img").forEach(img => {
+    img.addEventListener("click", () => {
+      const overlay = document.createElement("div");
+      overlay.style.position = "fixed";
+      overlay.style.top = 0;
+      overlay.style.left = 0;
+      overlay.style.width = "100%";
+      overlay.style.height = "100%";
+      overlay.style.backgroundColor = "rgba(0,0,0,0.8)";
+      overlay.style.display = "flex";
+      overlay.style.alignItems = "center";
+      overlay.style.justifyContent = "center";
+      overlay.style.zIndex = 1000;
+      const fullImg = document.createElement("img");
+      fullImg.src = img.src;
+      fullImg.style.maxWidth = "90%";
+      fullImg.style.maxHeight = "90%";
+      fullImg.style.border = "2px solid white";
+      overlay.appendChild(fullImg);
+      overlay.addEventListener("click", () => overlay.remove());
+      document.body.appendChild(overlay);
+    });
   });
 }
 
@@ -286,7 +314,6 @@ async function handleFileImage(file) {
   await new Promise(r => img.onload = r);
   const ctx = previewCanvas.getContext("2d");
   ctx.clearRect(0,0,previewCanvas.width, previewCanvas.height);
-  // resize image to fit canvas
   const ratio = Math.min(previewCanvas.width/img.width, previewCanvas.height/img.height);
   const w = img.width*ratio;
   const h = img.height*ratio;
@@ -303,10 +330,10 @@ function fileToDataURL(file) {
   });
 }
 
+// Global helpers
 window.db = db;
 window.ref = ref;
 window.update = update;
 window.endGame = () => {
-  // window.db, ref, update are already defined
-  update(ref(window.db, "lobbies/main-lobby"), { gameState: "ended" });
+  update(ref(db, `lobbies/${lobbyId}`), { gameState: "ended" });
 };
