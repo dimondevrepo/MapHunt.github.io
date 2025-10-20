@@ -74,6 +74,14 @@ canvas{max-width:100%;border-radius:6px;background:#081222}
 
 .muted{color:var(--muted);font-size:0.9rem;margin-top:8px}
 
+#category {
+  color: black; /* color of selected item */
+}
+
+#category option {
+  color: black; /* color of dropdown items */
+}
+
 ul#recent-list{list-style:none;padding:0;margin:0}
 ul#recent-list li{padding:8px;border-bottom:1px solid rgba(255,255,255,0.02);display:flex;gap:10px;align-items:center}
 ul#recent-list img{height:48px;width:auto;border-radius:4px;object-fit:cover}
@@ -95,3 +103,4 @@ table img {
   object-fit: cover;
   border-radius: 4px;
 }
+
