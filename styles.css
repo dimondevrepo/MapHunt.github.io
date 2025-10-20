@@ -75,11 +75,11 @@ canvas{max-width:100%;border-radius:6px;background:#081222}
 .muted{color:var(--muted);font-size:0.9rem;margin-top:8px}
 
 #category {
-  color: black; /* color of selected item */
+  color: #0f1724; /* color of selected item */
 }
 
 #category option {
-  color: black; /* color of dropdown items */
+  color: #0f1724; /* color of dropdown items */
 }
 
 ul#recent-list{list-style:none;padding:0;margin:0}
@@ -103,4 +103,5 @@ table img {
   object-fit: cover;
   border-radius: 4px;
 }
+
 
