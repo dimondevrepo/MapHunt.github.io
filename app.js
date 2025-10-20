@@ -164,13 +164,13 @@ function setupGameListeners() {
     }
 
     // Live submissions list
-    recentList.innerHTML = "";
+    submittedCategories.innerHTML = "";
     if (data.submissions) {
     Object.values(data.submissions).forEach(userSubmissions => {
     Object.values(userSubmissions).forEach(sub => {
       const li = document.createElement("li");
       li.textContent = `${sub.nickname}: ${sub.category}`;
-      recentList.appendChild(li);
+      submittedCategories.appendChild(li);
         });
       });
     }
@@ -347,6 +347,7 @@ window.update = update;
 window.endGame = () => {
   update(ref(db, `lobbies/${lobbyId}`), { gameState: "ended" });
 };
+
 
 
 
